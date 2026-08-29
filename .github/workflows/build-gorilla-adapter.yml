@@ -1,0 +1,66 @@
+name: Build UniversalVR Gorilla Adapter
+
+on:
+  workflow_dispatch:
+
+  push:
+    paths:
+      - "adapters/gorilla-tag/**"
+      - ".github/workflows/build-gorilla-adapter.yml"
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Setup Android NDK
+        run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
+
+
+      - name: Configure adapter
+        run: |
+          cmake \
+            -S adapters/gorilla-tag \
+            -B adapters/gorilla-tag/build \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-29
+
+
+      - name: Build adapter
+        run: |
+          cmake \
+            --build adapters/gorilla-tag/build \
+            --config Release
+
+
+      - name: Prepare QMOD
+        run: |
+          mkdir -p adapters/gorilla-tag/qmod
+          cp adapters/gorilla-tag/mod.json adapters/gorilla-tag/qmod/
+          cp adapters/gorilla-tag/build/libuniversalvr_gtag.so adapters/gorilla-tag/qmod/
+
+
+      - name: Package QMOD
+        run: |
+          cd adapters/gorilla-tag/qmod
+          zip -r ../UniversalVR-GorillaTag-0.1.0.qmod .
+
+
+      - name: Upload adapter
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: UniversalVR-GorillaTag-Adapter
+
+          path: |
+            adapters/gorilla-tag/build/libuniversalvr_gtag.so
+            adapters/gorilla-tag/UniversalVR-GorillaTag-0.1.0.qmod
