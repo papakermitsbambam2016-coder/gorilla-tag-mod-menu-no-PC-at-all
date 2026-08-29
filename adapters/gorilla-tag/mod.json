@@ -1,0 +1,32 @@
+  "$schema": "https://raw.githubusercontent.com/Lauriethefish/QuestPatcher.QMod/refs/heads/main/QuestPatcher.QMod/Resources/qmod.schema.json",
+
+  "_QPVersion": "1.1.0",
+
+  "name": "UniversalVR Gorilla Tag",
+
+  "id": "universalvr-gtag",
+
+  "modloader": "Scotland2",
+
+  "author": "UniversalVR",
+
+  "version": "0.1.0",
+
+  "packageId": "com.AnotherAxiom.GorillaTag",
+
+  "description": "UniversalVR Gorilla Tag Quest adapter.",
+
+  "dependencies": [],
+
+  "modFiles": [],
+
+  "lateModFiles": [
+    "libuniversalvr_gtag.so"
+  ],
+
+  "libraryFiles": [],
+
+  "fileCopies": [],
+
+  "copyExtensions": []
+}
