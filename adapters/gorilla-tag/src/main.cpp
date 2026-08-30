@@ -11,103 +11,85 @@ struct ModInfo
     const char* version;
 };
 
-struct Vector3
-{
-    float x;
-    float y;
-    float z;
-
-    Vector3 operator-(const Vector3& other) const
-    {
-        return {
-            x - other.x,
-            y - other.y,
-            z - other.z
-        };
-    }
-
-    Vector3 operator+(const Vector3& other) const
-    {
-        return {
-            x + other.x,
-            y + other.y,
-            z + other.z
-        };
-    }
-
-    Vector3 operator*(float scale) const
-    {
-        return {
-            x * scale,
-            y * scale,
-            z * scale
-        };
-    }
-};
-
 namespace UniversalVR
 {
-    static std::atomic<bool> enabled { true };
+    static std::atomic<bool> enabled{true};
+    static std::atomic<float> reachScale{1.25f};
 
-    static std::atomic<float> leftArmScale  { 1.25f };
-    static std::atomic<float> rightArmScale { 1.25f };
+    static float originalMaxArmLength = 0.0f;
+    static bool originalValueCaptured = false;
 
-    Vector3 CalculateLongArmPosition(
-        const Vector3& headPosition,
-        const Vector3& trackedHandPosition,
-        float scale)
+    float ClampReachScale(float value)
     {
-        Vector3 offset =
-            trackedHandPosition - headPosition;
+        if (value < 1.0f)
+            return 1.0f;
 
-        return headPosition + offset * scale;
+        if (value > 2.0f)
+            return 2.0f;
+
+        return value;
+    }
+
+    void SetReachScale(float value)
+    {
+        value = ClampReachScale(value);
+
+        reachScale.store(value);
+
+        LOGI(
+            "UniversalVR Reach Scale changed to %.2fx",
+            value
+        );
     }
 
     void SetEnabled(bool value)
     {
         enabled.store(value);
+
+        LOGI(
+            "UniversalVR Long Arms: %s",
+            value ? "ON" : "OFF"
+        );
     }
 
-    void SetArmScale(float scale)
+    void CaptureOriginalArmLength(float value)
     {
-        if (scale < 1.0f)
-            scale = 1.0f;
+        if (!originalValueCaptured)
+        {
+            originalMaxArmLength = value;
+            originalValueCaptured = true;
 
-        if (scale > 3.0f)
-            scale = 3.0f;
-
-        leftArmScale.store(scale);
-        rightArmScale.store(scale);
+            LOGI(
+                "Original Gorilla Tag maxArmLength captured: %.3f",
+                value
+            );
+        }
     }
 
-    void SetLeftArmScale(float scale)
+    float GetDesiredArmLength()
     {
-        if (scale < 1.0f)
-            scale = 1.0f;
+        if (!originalValueCaptured)
+            return 0.0f;
 
-        if (scale > 3.0f)
-            scale = 3.0f;
+        if (!enabled.load())
+            return originalMaxArmLength;
 
-        leftArmScale.store(scale);
+        return originalMaxArmLength * reachScale.load();
     }
 
-    void SetRightArmScale(float scale)
+    float RestoreOriginalArmLength()
     {
-        if (scale < 1.0f)
-            scale = 1.0f;
+        if (!originalValueCaptured)
+            return 0.0f;
 
-        if (scale > 3.0f)
-            scale = 3.0f;
-
-        rightArmScale.store(scale);
+        return originalMaxArmLength;
     }
 
     void Reset()
     {
-        leftArmScale.store(1.0f);
-        rightArmScale.store(1.0f);
+        reachScale.store(1.0f);
 
-        LOGI("Long Arms reset.");
+        LOGI("UniversalVR reach reset to 1.00x.");
     }
 }
 
@@ -116,48 +98,46 @@ __attribute__((visibility("default")))
 void setup(ModInfo& info)
 {
     info.id = "universalvr-gtag";
-    info.version = "0.2.0";
+    info.version = "0.3.0";
 
-    LOGI("UniversalVR Gorilla Tag adapter setup.");
+    LOGI("UniversalVR Gorilla Tag adapter v0.3 setup.");
 }
 
 extern "C"
 __attribute__((visibility("default")))
 void load()
 {
-    LOGI("UniversalVR Gorilla Tag adapter loaded.");
+    LOGI("UniversalVR Gorilla Tag adapter v0.3 loaded.");
 
-    UniversalVR::SetArmScale(1.25f);
+    UniversalVR::SetEnabled(true);
+    UniversalVR::SetReachScale(1.25f);
 
     /*
+        NEXT CONNECTION:
+
+        Once GTPlayer is resolved:
+
+        float current =
+            GTPlayer.maxArmLength;
+
+        UniversalVR::CaptureOriginalArmLength(current);
+
+        GTPlayer.maxArmLength =
+            UniversalVR::GetDesiredArmLength();
+
+
+        When disabled:
+
+        GTPlayer.maxArmLength =
+            UniversalVR::RestoreOriginalArmLength();
+
+
         IMPORTANT:
 
-        The long-arm math is now implemented.
+        Do not change the Quest Guardian / physical boundary.
 
-        What remains is connecting these three things:
-
-        1. Gorilla Tag head transform
-        2. Gorilla Tag left controller transform
-        3. Gorilla Tag right controller transform
-
-        Every frame we will do:
-
-        left.position =
-            CalculateLongArmPosition(
-                head.position,
-                trackedLeft.position,
-                leftArmScale
-            );
-
-        right.position =
-            CalculateLongArmPosition(
-                head.position,
-                trackedRight.position,
-                rightArmScale
-            );
-
-        We deliberately do NOT guess the current Gorilla Tag
-        IL2CPP class names or hook signature here.
+        This only changes Gorilla Tag's own locomotion
+        arm-distance clamp.
     */
 }
 
@@ -165,5 +145,5 @@ extern "C"
 __attribute__((visibility("default")))
 void late_load()
 {
-    LOGI("UniversalVR Gorilla Tag adapter late_load.");
+    LOGI("UniversalVR Gorilla Tag adapter v0.3 late_load.");
 }
