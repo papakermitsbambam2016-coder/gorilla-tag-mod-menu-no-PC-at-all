@@ -52,7 +52,7 @@ jobs:
       - name: Package QMOD
         run: |
           cd adapters/gorilla-tag/qmod
-          zip -r ../UniversalVR-GorillaTag-0.1.0.qmod .
+          zip -r ../UniversalVR-GorillaTag-0.2.0.qmod .
 
 
       - name: Upload adapter
@@ -63,4 +63,4 @@ jobs:
 
           path: |
             adapters/gorilla-tag/build/libuniversalvr_gtag.so
-            adapters/gorilla-tag/UniversalVR-GorillaTag-0.1.0.qmod
+            adapters/gorilla-tag/UniversalVR-GorillaTag-0.2.0.qmod
